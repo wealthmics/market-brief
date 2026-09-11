@@ -1,0 +1,41 @@
+name: Weekly Market Brief
+
+on:
+  schedule:
+    # 23:30 UTC Friday == 05:00 IST Saturday. GitHub cron is always UTC.
+    - cron: "30 23 * * 5"
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write           # needed to save the finished file back
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Kolkata      # so the script reads Saturday IST, not Friday UTC
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install yfinance openpyxl
+
+      - name: Fetch market data and build the snapshot
+        run: python weekly_market_snapshot_ExcelHTML.py
+
+      - name: Stitch the snapshot into the newsletter
+        run: python stitch.py
+
+      - name: Commit the finished file to latest/
+        run: |
+          git config user.name  "market-brief-bot"
+          git config user.email "actions@github.com"
+          git add latest/ issue.txt
+          git diff --cached --quiet || git commit -m "Weekly brief $(date +%F)"
+          git push
