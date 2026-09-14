@@ -6,8 +6,8 @@ Each week you drop your newsletter HTML (with the story written) into the
 input/ folder. The file can have ANY name. This script:
   - picks up the newest .html in input/
   - drops in the fresh market table
-  - sets the current Saturday date
-  - sets the issue number automatically (it counts up on its own)
+  - sets the current date
+  - sets the issue number to input issue + 1
   - writes the finished file into the latest/ folder
 
 The story text is never touched. Only the table, the date, and the issue
@@ -20,9 +20,9 @@ import os
 import re
 import shutil
 
+
 INPUT_DIR = "input"
 OUTPUT_DIR = "latest"
-ISSUE_FILE = "issue.txt"   # remembers the last issue number between runs
 
 
 # ── DATE HELPERS ─────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ def find_newsletter():
             "Upload your newsletter there (any name) and run again."
         )
 
-    return files[-1]   # newest wins if there is more than one
+    return files[-1]
 
 
 # ── FIND THE FRESH MARKET SNIPPET ─────────────────────────────────────────────
@@ -67,7 +67,7 @@ def find_snippet():
     On Monday-Friday the snapshot script creates a _PARTIAL file.
     On Saturday/Sunday it creates a FINAL file.
 
-    We therefore accept both and simply use the newest snapshot.
+    Both are accepted. The newest snapshot is used.
     """
 
     files = glob.glob("MICS_Market_Snapshot_*.html")
@@ -85,21 +85,28 @@ def find_snippet():
 
 def next_issue(html):
     """
-    Counts up on its own, ignoring whatever number is in the uploaded file.
+    Reads the issue number from the uploaded newsletter
+    and increases it by one.
+
+    Example:
+        Input  : Issue &middot; 022
+        Output : 023
     """
 
-    if os.path.exists(ISSUE_FILE):
-        last = int(open(ISSUE_FILE).read().strip())
-    else:
-        m = re.search(r"Issue &middot; (\d+)", html)
-        last = int(m.group(1)) if m else 0
+    m = re.search(
+        r"Issue\s*(?:&middot;|·)\s*(\d+)",
+        html
+    )
 
-    nxt = last + 1
+    if not m:
+        raise SystemExit(
+            "Could not find the Issue number in the input newsletter. "
+            "Expected something like: Issue &middot; 022"
+        )
 
-    with open(ISSUE_FILE, "w") as f:
-        f.write(str(nxt))
+    current_issue = int(m.group(1))
 
-    return nxt
+    return current_issue + 1
 
 
 # ── STITCH ───────────────────────────────────────────────────────────────────
@@ -159,10 +166,16 @@ def main():
     issue = next_issue(html)
 
     html, n_issue = re.subn(
-        r"(Issue &middot; )(\d+)",
+        r"(Issue\s*(?:&middot;|·)\s*)(\d+)",
         lambda m: f"{m.group(1)}{issue:03d}",
-        html
+        html,
+        count=1
     )
+
+    if n_issue == 0:
+        raise SystemExit(
+            "Could not replace the Issue number in the newsletter."
+        )
 
 
     # ── 3) UPDATE MASTHEAD DATE ──────────────────────────────────────────────
