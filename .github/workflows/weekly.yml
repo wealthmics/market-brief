@@ -36,6 +36,6 @@ jobs:
         run: |
           git config user.name  "market-brief-bot"
           git config user.email "actions@github.com"
-          git add latest/ issue.txt
+          git add latest/
           git diff --cached --quiet || git commit -m "Weekly brief $(date +%F)"
           git push
