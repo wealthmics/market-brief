@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,12 +32,16 @@ jobs:
         run: python weekly_market_snapshot_ExcelHTML.py
 
       - name: Stitch the snapshot into the newsletter
-        run: python stitch.py
+        run: |
+          find latest -type f ! -name .gitkeep -delete
+          NEWEST=$(git log -1 --diff-filter=AM --name-only --pretty=format: -- input/ | grep -v '^$' | grep -v '.gitkeep' | head -1)
+          [ -n "$NEWEST" ] && find input -type f ! -name .gitkeep ! -path "$NEWEST" -delete
+          python stitch.py
 
       - name: Commit the finished file to latest/
         run: |
           git config user.name  "market-brief-bot"
           git config user.email "actions@github.com"
-          git add latest/
+          git add -A latest/ input/
           git diff --cached --quiet || git commit -m "Weekly brief $(date +%F)"
           git push
