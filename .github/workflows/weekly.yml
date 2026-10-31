@@ -34,7 +34,7 @@ jobs:
       - name: Stitch the snapshot into the newsletter
         run: |
           find latest -type f ! -name .gitkeep -delete
-          NEWEST=$(git log -1 --diff-filter=AM --name-only --pretty=format: -- input/ | grep -v '^$' | grep -v '.gitkeep' | head -1)
+          NEWEST=$(git log -1 --diff-filter=AMR --name-only --pretty=format: -- input/ | grep -v '^$' | grep -v '.gitkeep' | head -1)
           [ -n "$NEWEST" ] && find input -type f ! -name .gitkeep ! -path "$NEWEST" -delete
           python stitch.py
 
