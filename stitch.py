@@ -226,7 +226,7 @@ def main():
 
     dated = os.path.join(
         OUTPUT_DIR,
-        f"Global_Market_Brief_{today:%Y-%m-%d}.html"
+        f"Global Market Brief Newsletter_{today.strftime('%B')} {ordinal(today.day)}.html"
     )
 
 
